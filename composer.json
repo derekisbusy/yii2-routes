@@ -2,7 +2,7 @@
     "name": "derekisbusy/yii2-routes",
     "description": "Route controls for dektrium/yii2-rbac",
     "type": "yii2-extension",
-    "keywords": ["yii2","extension"],
+    "keywords": ["yii2","extension","rbac","routes","access control"],
     "license": "BSD-3-Clause",
     "authors": [
         {

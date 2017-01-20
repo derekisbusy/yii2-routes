@@ -1,6 +1,6 @@
 <?php
 
-namespace derekisbusy\rbacroutes\models;
+namespace derekisbusy\routes\models;
 
 /**
  * This is the ActiveQuery class for [[Route]].

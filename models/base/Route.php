@@ -1,6 +1,6 @@
 <?php
 
-namespace derekisbusy\rbacroutes\models\base;
+namespace derekisbusy\routes\models\base;
 
 use Yii;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace derekisbusy\rbacroutes\models;
+namespace derekisbusy\routes\models;
 
 use Exception;
 use derekisbusy\rbacroutes\Configs;

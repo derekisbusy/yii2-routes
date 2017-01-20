@@ -3,7 +3,7 @@
 namespace derekisbusy\rbac\controllers;
 
 use Yii;
-use derekisbusy\rbacroutes\models\Route;
+use derekisbusy\routes\models\Route;
 use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -59,7 +59,7 @@ class RouteController extends Controller
         $routes = $this->getAppRoutes();
         
         foreach ($routes as $name) {
-            $route = new \derekisbusy\rbacroutes\models\Route();
+            $route = new \derekisbusy\routes\models\Route();
             $route->name = $name;
             $route->save();
         }

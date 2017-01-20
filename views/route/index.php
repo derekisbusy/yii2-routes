@@ -2,7 +2,7 @@
 /* @var $this yii\web\View */
 
 use yii\helpers\Html;
-use derekisbusy\rbacroutes\models\Route;
+use derekisbusy\routes\models\Route;
 use kartik\tree\TreeView;
 use kartik\tree\Module;
 use yii\web\View;
@@ -25,7 +25,7 @@ $this->params['breadcrumbs'][] = $this->title;
         'displayValue' => 0,
         'cacheSettings' => ['enableCache' => true],
         'nodeAddlViews' => [
-            Module::VIEW_PART_2 => '@vendor/derekisbusy/yii2-rbac-routes/views/route/_form'
+            Module::VIEW_PART_2 => '@vendor/derekisbusy/yii2-routes/views/route/_form'
         ]
     ]);
     ?>

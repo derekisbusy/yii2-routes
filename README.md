@@ -1,6 +1,6 @@
-Yii2 RBAC Routes
+Yii2 Routes
 ================
-Routes for dektrium/yii2-rbac
+Routes for dektrium/yii2-routes
 
 Installation
 ------------
@@ -10,22 +10,13 @@ The preferred way to install this extension is through [composer](http://getcomp
 Either run
 
 ```
-php composer.phar require --prefer-dist derekisbusy/yii2-rbac-routes "*"
+php composer.phar require --prefer-dist derekisbusy/yii2-routes "*"
 ```
 
 or add
 
 ```
-"derekisbusy/yii2-rbac-routes": "*"
+"derekisbusy/yii2-routes": "*"
 ```
 
 to the require section of your `composer.json` file.
-
-
-Usage
------
-
-Once the extension is installed, simply use it in your code by  :
-
-```php
-<?= \derekisbusy\rbacroutes\AutoloadExample::widget(); ?>```
