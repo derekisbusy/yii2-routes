@@ -1,19 +1,16 @@
 <?php
 /* @var $this yii\web\View */
 
-use yii\helpers\Html;
 use derekisbusy\routes\models\Route;
-use kartik\tree\TreeView;
 use kartik\tree\Module;
-use yii\web\View;
+use kartik\tree\TreeView;
+use yii\helpers\Url;
 
 
 $this->title = Yii::t('rbac', 'Routes');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="route-index">
-
-    <h1><?=Html::encode($this->title) ?></h1>
 
     <?php
     echo TreeView::widget([
@@ -24,8 +21,15 @@ $this->params['breadcrumbs'][] = $this->title;
         'isAdmin' => true, // @TODO : put your isAdmin getter here
         'displayValue' => 0,
         'cacheSettings' => ['enableCache' => true],
+        'nodeActions' => [
+            Module::NODE_MANAGE => Url::to(['/routes/route/manage']),
+            Module::NODE_SAVE => Url::to(['/routes/route/save']),
+            Module::NODE_REMOVE => Url::to(['/routes/route/remove']),
+            Module::NODE_MOVE => Url::to(['/routes/route/move']),
+        ],
+        'nodeView' => '@vendor/derekisbusy/yii2-routes/views/route/_form',
         'nodeAddlViews' => [
-            Module::VIEW_PART_2 => '@vendor/derekisbusy/yii2-routes/views/route/_form'
+            Module::VIEW_PART_2 => '@vendor/derekisbusy/yii2-routes/views/route/_assigned'
         ]
     ]);
     ?>
