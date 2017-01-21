@@ -1,6 +1,6 @@
 <?php
 
-namespace derekisbusy\rbac\controllers;
+namespace derekisbusy\routes\controllers;
 
 use Yii;
 use derekisbusy\routes\models\Route;
@@ -23,19 +23,19 @@ class RouteController extends Controller
                     'delete' => ['post'],
                 ],
             ],
-            'access' => [
-                'class' => \yii\filters\AccessControl::className(),
-                'rules' => [
-                    [
-                        'allow' => true,
-                        'actions' => ['index', 'view', 'create', 'update', 'delete', 'save-as-new'],
-                        'roles' => ['@']
-                    ],
-                    [
-                        'allow' => false
-                    ]
-                ]
-            ]
+//            'access' => [
+//                'class' => \yii\filters\AccessControl::className(),
+//                'rules' => [
+//                    [
+//                        'allow' => true,
+//                        'actions' => ['index', 'view', 'create', 'update', 'delete', 'save-as-new'],
+//                        'roles' => ['@']
+//                    ],
+//                    [
+//                        'allow' => false
+//                    ]
+//                ]
+//            ]
         ];
     }
 
@@ -56,7 +56,9 @@ class RouteController extends Controller
     
     public function refreshRoutes()
     {
-        $routes = $this->getAppRoutes();
+        
+        
+        $routes = $this->module->getAppRoutes();
         
         foreach ($routes as $name) {
             $route = new \derekisbusy\routes\models\Route();
@@ -65,202 +67,226 @@ class RouteController extends Controller
         }
     }
     
+    
+    
+
     /**
-     * Get available and assigned routes
-     * @return array
+     * Saves a node once form is submitted
      */
-    public function getRoutes()
+    public function actionSave()
     {
-        $manager = Configs::authManager();
-        $routes = $this->getAppRoutes();
-        $exists = [];
-        foreach (array_keys($manager->getPermissions()) as $name) {
-            if ($name[0] !== '/') {
-                continue;
-            }
-            $exists[] = $name;
-            unset($routes[$name]);
+        $post = Yii::$app->request->post();
+        static::checkValidRequest(false, !isset($post['treeNodeModify']));
+        $treeNodeModify = $parentKey = $currUrl = $treeSaveHash = null;
+        $modelClass = '\kartik\tree\models\Tree';
+        $data = static::getPostData();
+        extract($data);
+        $module = TreeView::module();
+        $keyAttr = $module->dataStructure['keyAttribute'];
+        /**
+         * @var Tree $modelClass
+         * @var Tree $node
+         * @var Tree $parent
+         */
+        if ($treeNodeModify) {
+            $node = new $modelClass;
+            $successMsg = Yii::t('kvtree', 'The node was successfully created.');
+            $errorMsg = Yii::t('kvtree', 'Error while creating the node. Please try again later.');
+        } else {
+            $tag = explode("\\", $modelClass);
+            $tag = array_pop($tag);
+            $id = $post[$tag][$keyAttr];
+            $node = $modelClass::findOne($id);
+            $successMsg = Yii::t('kvtree', 'Saved the node details successfully.');
+            $errorMsg = Yii::t('kvtree', 'Error while saving the node. Please try again later.');
         }
-        return [
-            'available' => array_keys($routes),
-            'assigned' => $exists,
-        ];
+        $node->activeOrig = $node->active;
+        $isNewRecord = $node->isNewRecord;
+        $node->load($post);
+        if ($treeNodeModify) {
+            if ($parentKey == TreeView::ROOT_KEY) {
+                $node->makeRoot();
+            } else {
+                $parent = $modelClass::findOne($parentKey);
+                $node->appendTo($parent);
+            }
+        }
+        $errors = $success = false;
+        if ($node->save()) {
+            // check if active status was changed
+            if (!$isNewRecord && $node->activeOrig != $node->active) {
+                if ($node->active) {
+                    $success = $node->activateNode(false);
+                    $errors = $node->nodeActivationErrors;
+                } else {
+                    $success = $node->removeNode(true, false); // only deactivate the node(s)
+                    $errors = $node->nodeRemovalErrors;
+                }
+            } else {
+                $success = true;
+            }
+            if (!empty($errors)) {
+                $success = false;
+                $errorMsg = "<ul style='padding:0'>\n";
+                foreach ($errors as $err) {
+                    $errorMsg .= "<li>" . Yii::t('kvtree', "Node # {id} - '{name}': {error}", $err) . "</li>\n";
+                }
+                $errorMsg .= "</ul>";
+            }
+        } else {
+            $errorMsg = '<ul style="margin:0"><li>' . implode('</li><li>', $node->getFirstErrors()) . '</li></ul>';
+        }
+        if (Yii::$app->has('session')) {
+            $session = Yii::$app->session;
+            $session->set(ArrayHelper::getValue($post, 'nodeSelected', 'kvNodeId'), $node->{$keyAttr});
+            if ($success) {
+                $session->setFlash('success', $successMsg);
+            } else {
+                $session->setFlash('error', $errorMsg);
+            }
+        } elseif (!$success) {
+            throw new ErrorException("Error saving node!\n{$errorMsg}");
+        }
+        return $this->redirect($currUrl);
     }
 
     /**
-     * Get list of application routes
-     * @return array
+     * View, create, or update a tree node via ajax
+     *
+     * @return string json encoded response
      */
-    public function getAppRoutes($module = null, $app = null)
+    public function actionManage()
     {
-        $apps = Configs::instance()->apps;
-        if ($module === null) {
-            if (!empty($apps)) {
-                $result = [];
-                foreach ($apps as $alias => $config) {
-                    if ($config === null) {
-                        $result += $this->getAppRoutes(Yii::$app, $alias);
+        static::checkValidRequest();
+        $callback = function () {
+            $parentKey = null;
+            $modelClass = '\kartik\tree\models\Tree';
+            $isAdmin = $softDelete = $showFormButtons = $showIDAttribute = $allowNewRoots = false;
+            $currUrl = $nodeView = $formAction = $nodeSelected = '';
+            $formOptions = $iconsList = $nodeAddlViews = $breadcrumbs = [];
+            $data = static::getPostData();
+            extract($data);
+            /**
+             * @var Tree $modelClass
+             * @var Tree $node
+             */
+            if (!isset($id) || empty($id)) {
+                $node = new $modelClass;
+                $node->initDefaults();
+            } else {
+                $node = $modelClass::findOne($id);
+            }
+            $module = TreeView::module();
+            $params = $module->treeStructure + $module->dataStructure + [
+                    'node' => $node,
+                    'parentKey' => $parentKey,
+                    'action' => $formAction,
+                    'formOptions' => empty($formOptions) ? [] : $formOptions,
+                    'modelClass' => $modelClass,
+                    'currUrl' => $currUrl,
+                    'isAdmin' => $isAdmin,
+                    'iconsList' => $iconsList,
+                    'softDelete' => $softDelete,
+                    'showFormButtons' => $showFormButtons,
+                    'showIDAttribute' => $showIDAttribute,
+                    'allowNewRoots' => $allowNewRoots,
+                    'nodeView' => $nodeView,
+                    'nodeAddlViews' => $nodeAddlViews,
+                    'nodeSelected' => $nodeSelected,
+                    'breadcrumbs' => empty($breadcrumbs) ? [] : $breadcrumbs,
+                    'noNodesMessage' => ''
+                ];
+            if (!empty($module->unsetAjaxBundles)) {
+                Event::on(
+                    View::className(), View::EVENT_AFTER_RENDER, function ($e) use ($module) {
+                    foreach ($module->unsetAjaxBundles as $bundle) {
+                        unset($e->sender->assetBundles[$bundle]);
+                    }
+                }
+                );
+            }
+            static::checkSignature('manage', $data);
+            return $this->renderAjax($nodeView, ['params' => $params]);
+        };
+        return self::process(
+            $callback,
+            Yii::t('kvtree', 'Error while viewing the node. Please try again later.'),
+            null
+        );
+    }
+
+    /**
+     * Remove a tree node
+     */
+    public function actionRemove()
+    {
+        static::checkValidRequest();
+        $callback = function () {
+            /**
+             * @var Tree $modelClass
+             * @var Tree $node
+             */
+            $id = null;
+            $modelClass = '\kartik\tree\models\Tree';
+            $softDelete = false;
+            $data = static::getPostData();
+            static::checkSignature('remove', $data);
+            extract($data);
+            $node = $modelClass::findOne($id);
+            return $node->removeNode($softDelete);
+        };
+        return self::process(
+            $callback,
+            Yii::t('kvtree', 'Error removing the node. Please try again later.'),
+            Yii::t('kvtree', 'The node was removed successfully.')
+        );
+    }
+
+    /**
+     * Move a tree node
+     */
+    public function actionMove()
+    {
+        /**
+         * @var Tree $modelClass
+         * @var Tree $nodeFrom
+         * @var Tree $nodeTo
+         */
+        static::checkValidRequest();
+        $dir = $idFrom = $idTo = $treeMoveHash = null;
+        $modelClass = '\kartik\tree\models\Tree';
+        $allowNewRoots = false;
+        $data = static::getPostData();
+        extract($data);
+        $nodeFrom = $modelClass::findOne($idFrom);
+        $nodeTo = $modelClass::findOne($idTo);
+        $isMovable = $nodeFrom->isMovable($dir);
+        $errorMsg = $isMovable ? Yii::t('kvtree', 'Error while moving the node. Please try again later.') :
+            Yii::t('kvtree', 'The selected node cannot be moved.');
+        $callback = function () use ($dir, $nodeFrom, $nodeTo, $allowNewRoots, $treeMoveHash, $isMovable, $data) {
+            if (!empty($nodeFrom) && !empty($nodeTo)) {
+                static::checkSignature('move', $data);
+                if (!$isMovable) {
+                    return false;
+                }
+                if ($dir == 'u') {
+                    $nodeFrom->insertBefore($nodeTo);
+                } elseif ($dir == 'd') {
+                    $nodeFrom->insertAfter($nodeTo);
+                } elseif ($dir == 'l') {
+                    if ($nodeTo->isRoot() && $allowNewRoots) {
+                        $nodeFrom->makeRoot();
                     } else {
-                        // start new application
-                        $m = new yii\base\Module($alias, null, $config);
-                        $result += $this->getAppRoutes($m, true);
+                        $nodeFrom->insertAfter($nodeTo);
                     }
-                    
+                } elseif ($dir == 'r') {
+                    $nodeFrom->appendTo($nodeTo);
                 }
-//                        var_dump($result); exit;
-                return $result;
+                return $nodeFrom->save();
             }
-            $module = Yii::$app;
-        } elseif (is_string($module)) {
-            $module = Yii::$app->getModule($module);
-        }
-        $key = [__METHOD__, $module->getUniqueId()];
-        $cache = Configs::instance()->cache;
-        if ($cache === null || ($result = $cache->get($key)) === false) {
-            $result = [];
-            $this->getRouteRecursive($module, $result, $app);
-            if ($cache !== null) {
-                $cache->set($key, $result, Configs::instance()->cacheDuration, new TagDependency([
-                    'tags' => self::CACHE_TAG,
-                ]));
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get route(s) recursive
-     * @param \yii\base\Module $module
-     * @param array $result
-     */
-    protected function getRouteRecursive($module, &$result, &$app= null)
-    {
-        $token = "Get Route of '" . get_class($module) . "' with id '" . $module->uniqueId . "'";
-        Yii::beginProfile($token, __METHOD__);
-        try {
-            foreach ($module->getModules() as $id => $child) {
-                if (($child = $module->getModule($id)) !== null) {
-                    $this->getRouteRecursive($child, $result, $app);
-                }
-            }
-
-            foreach ($module->controllerMap as $id => $type) {
-                $this->getControllerActions($type, $id, $module, $result, $app);
-            }
-
-            $namespace = trim($module->controllerNamespace, '\\') . '\\';
-            $this->getControllerFiles($module, $namespace, '', $result, $app);
-            
-            if ($app===true) {
-                $all = ltrim($module->uniqueId . '/*', '/');
-            } elseif (is_string($app) || is_null($app)) {
-                $all = $app.'/' . ltrim($module->uniqueId . '/*', '/');
-            }
-            $result[$all] = $all;
-        } catch (\Exception $exc) {
-            Yii::error($exc->getMessage(), __METHOD__);
-        }
-        Yii::endProfile($token, __METHOD__);
-    }
-
-    /**
-     * Get list controller under module
-     * @param \yii\base\Module $module
-     * @param string $namespace
-     * @param string $prefix
-     * @param mixed $result
-     * @return mixed
-     */
-    protected function getControllerFiles($module, $namespace, $prefix, &$result, $app = null)
-    {
-        $path = Yii::getAlias('@' . str_replace('\\', '/', $namespace), false);
-        $token = "Get controllers from '$path'";
-        Yii::beginProfile($token, __METHOD__);
-        try {
-            if (!is_dir($path)) {
-                return;
-            }
-            foreach (scandir($path) as $file) {
-                if ($file == '.' || $file == '..') {
-                    continue;
-                }
-                if (is_dir($path . '/' . $file) && preg_match('%^[a-z0-9_/]+$%i', $file . '/')) {
-                    $this->getControllerFiles($module, $namespace . $file . '\\', $prefix . $file . '/', $result);
-                } elseif (strcmp(substr($file, -14), 'Controller.php') === 0) {
-                    $baseName = substr(basename($file), 0, -14);
-                    $name = strtolower(preg_replace('/(?<![A-Z])[A-Z]/', ' \0', $baseName));
-                    $id = ltrim(str_replace(' ', '-', $name), '-');
-                    $className = $namespace . $baseName . 'Controller';
-                    if (strpos($className, '-') === false && class_exists($className) && is_subclass_of($className, 'yii\base\Controller')) {
-                        $this->getControllerActions($className, $prefix . $id, $module, $result, $app);
-                    }
-                }
-            }
-        } catch (\Exception $exc) {
-            Yii::error($exc->getMessage(), __METHOD__);
-        }
-        Yii::endProfile($token, __METHOD__);
-    }
-
-    /**
-     * Get list action of controller
-     * @param mixed $type
-     * @param string $id
-     * @param \yii\base\Module $module
-     * @param string $result
-     */
-    protected function getControllerActions($type, $id, $module, &$result, &$app = null)
-    {
-        $token = "Create controller with cofig=" . VarDumper::dumpAsString($type) . " and id='$id'";
-        Yii::beginProfile($token, __METHOD__);
-        try {
-            /* @var $controller \yii\base\Controller */
-            $controller = Yii::createObject($type, [$id, $module]);
-            $this->getActionRoutes($controller, $result, $app);
-            if ($app===true) {
-                $all = "{$controller->uniqueId}/*";
-            } else {
-                $all = $app."/{$controller->uniqueId}/*";
-            }
-            $result[$all] = $all;
-        } catch (\Exception $exc) {
-            Yii::error($exc->getMessage(), __METHOD__);
-        }
-        Yii::endProfile($token, __METHOD__);
-    }
-
-    /**
-     * Get route of action
-     * @param \yii\base\Controller $controller
-     * @param array $result all controller action.
-     */
-    protected function getActionRoutes($controller, &$result, &$app = null)
-    {
-        $token = "Get actions of controller '" . $controller->uniqueId . "'";
-        Yii::beginProfile($token, __METHOD__);
-        try {
-            if ($app===true) {
-                $prefix = $controller->uniqueId . '/';
-            } else {
-                $prefix = $app.'/' . $controller->uniqueId . '/';
-            }
-            foreach ($controller->actions() as $id => $value) {
-                $result[$prefix . $id] = $prefix . $id;
-            }
-            $class = new \ReflectionClass($controller);
-            foreach ($class->getMethods() as $method) {
-                $name = $method->getName();
-                if ($method->isPublic() && !$method->isStatic() && strpos($name, 'action') === 0 && $name !== 'actions') {
-                    $name = strtolower(preg_replace('/(?<![A-Z])[A-Z]/', ' \0', substr($name, 6)));
-                    $id = $prefix . ltrim(str_replace(' ', '-', $name), '-');
-                    $result[$id] = $id;
-                }
-            }
-        } catch (\Exception $exc) {
-            Yii::error($exc->getMessage(), __METHOD__);
-        }
-        Yii::endProfile($token, __METHOD__);
+            return true;
+        };
+        return self::process($callback, $errorMsg, Yii::t('kvtree', 'The node was moved successfully.'));
     }
 
 }
