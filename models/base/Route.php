@@ -83,10 +83,10 @@ class Route extends \kartik\tree\models\Tree
 
     /**
      * @inheritdoc
-     * @return \derekisbusy\rbacroutes\models\RouteQuery the active query used by this AR class.
+     * @return \derekisbusy\routes\models\RouteQuery the active query used by this AR class.
      */
     public static function find()
     {
-        return new \derekisbusy\rbacroutes\models\RouteQuery(get_called_class());
+        return new \derekisbusy\routes\models\RouteQuery(get_called_class());
     }
 }
