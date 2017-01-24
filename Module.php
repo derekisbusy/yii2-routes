@@ -55,19 +55,21 @@ class Module extends \yii\base\Module
      * Get list of application routes
      * @return array
      */
-    public function getAppRoutes($module = null, $app = null)
+    public function getAppRoutes($module = null, $app = null, $root = null)
     {
-        $apps = Configs::instance()->apps;
+        $apps = $this->apps;
         if ($module === null) {
             if (!empty($apps)) {
                 $result = [];
                 foreach ($apps as $alias => $config) {
+                    $root = new models\Route;
+                    $root->name = $alias;
+                    $root->makeRoot();
                     if ($config === null) {
-                        $result += $this->getAppRoutes(Yii::$app, $alias);
+                        $result += $this->getAppRoutes(Yii::$app, $alias, $root);
                     } else {
-                        // start new application
                         $m = new yii\base\Module($alias, null, $config);
-                        $result += $this->getAppRoutes($m, true);
+                        $result += $this->getAppRoutes($m, true, $root);
                     }
                     
                 }
@@ -79,15 +81,15 @@ class Module extends \yii\base\Module
             $module = Yii::$app->getModule($module);
         }
         $key = [__METHOD__, $module->getUniqueId()];
-        $cache = Configs::instance()->cache;
+        $cache = $this->cache;
         if ($cache === null || ($result = $cache->get($key)) === false) {
             $result = [];
             $this->getRouteRecursive($module, $result, $app);
-            if ($cache !== null) {
-                $cache->set($key, $result, Configs::instance()->cacheDuration, new TagDependency([
-                    'tags' => self::CACHE_TAG,
-                ]));
-            }
+//            if ($cache !== null) {
+//                $cache->set($key, $result, Configs::instance()->cacheDuration, new TagDependency([
+//                    'tags' => self::CACHE_TAG,
+//                ]));
+//            }
         }
 
         return $result;
@@ -98,11 +100,27 @@ class Module extends \yii\base\Module
      * @param \yii\base\Module $module
      * @param array $result
      */
-    protected function getRouteRecursive($module, &$result, &$app= null)
+    protected function getRouteRecursive($module, &$result, &$app= null, $parent = null)
     {
         $token = "Get Route of '" . get_class($module) . "' with id '" . $module->uniqueId . "'";
         Yii::beginProfile($token, __METHOD__);
         try {
+            
+            if ($app===true) {
+                $all = ltrim($module->uniqueId . '/*', '/');
+            } elseif (is_string($app) || is_null($app)) {
+                $all = $app.'/' . ltrim($module->uniqueId . '/*', '/');
+            }
+            $result[$all] = $all;
+            
+            
+            $route = new models\Route;
+            $route->name = $all;
+            if ($parent) {
+                $route->appendTo($parent);
+            }
+            
+            
             foreach ($module->getModules() as $id => $child) {
                 if (($child = $module->getModule($id)) !== null) {
                     $this->getRouteRecursive($child, $result, $app);
@@ -116,12 +134,7 @@ class Module extends \yii\base\Module
             $namespace = trim($module->controllerNamespace, '\\') . '\\';
             $this->getControllerFiles($module, $namespace, '', $result, $app);
             
-            if ($app===true) {
-                $all = ltrim($module->uniqueId . '/*', '/');
-            } elseif (is_string($app) || is_null($app)) {
-                $all = $app.'/' . ltrim($module->uniqueId . '/*', '/');
-            }
-            $result[$all] = $all;
+            
         } catch (\Exception $exc) {
             Yii::error($exc->getMessage(), __METHOD__);
         }
