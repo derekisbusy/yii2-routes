@@ -13,6 +13,7 @@ use Yii;
  * @property integer $rgt
  * @property integer $lvl
  * @property string $name
+ * @property string $route
  * @property string $icon
  * @property integer $icon_type
  * @property integer $active
@@ -38,9 +39,9 @@ class Route extends \kartik\tree\models\Tree
     {
         return [
             [['root', 'lft', 'rgt', 'lvl', 'icon_type', 'active', 'selected', 'disabled', 'readonly', 'visible', 'collapsed', 'movable_u', 'movable_d', 'movable_l', 'movable_r', 'removable', 'removable_all'], 'integer'],
-            [['name'], 'required'],
+            [['name','route'], 'required'],
             [['name'], 'string', 'max' => 60],
-            [['icon'], 'string', 'max' => 255]
+            [['icon','route'], 'string', 'max' => 255]
         ];
     }
     
@@ -64,6 +65,7 @@ class Route extends \kartik\tree\models\Tree
             'rgt' => Yii::t('rbac', 'Rgt'),
             'lvl' => Yii::t('rbac', 'Lvl'),
             'name' => Yii::t('rbac', 'Name'),
+            'route' => Yii::t('rbac', 'Route'),
             'icon' => Yii::t('rbac', 'Icon'),
             'icon_type' => Yii::t('rbac', 'Icon Type'),
             'active' => Yii::t('rbac', 'Active'),
