@@ -10,16 +10,8 @@ use Yii;
 use yii\caching\TagDependency;
 use yii\helpers\VarDumper;
 
-/**
- * Description of Route
- *
- * @author Misbahul D Munir <misbahuldmunir@gmail.com>
- * @since 1.0
- */
 class Route extends \derekisbusy\routes\models\base\Route
 {
-    const CACHE_TAG = 'mdm.admin.route';
-
     /**
      * Assign or remove items
      * @param array $routes
