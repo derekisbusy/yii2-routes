@@ -2,12 +2,26 @@
 
 namespace derekisbusy\routes\controllers;
 
-use Yii;
+use Closure;
 use derekisbusy\routes\models\Route;
+use kartik\tree\models\Tree;
+use kartik\tree\TreeView;
+use Yii;
+use yii\base\ErrorException;
+use yii\base\Event;
+use yii\base\InvalidCallException;
+use yii\base\InvalidConfigException;
+use yii\base\InvalidParamException;
+use yii\base\NotSupportedException;
 use yii\data\ActiveDataProvider;
-use yii\web\Controller;
-use yii\web\NotFoundHttpException;
+use yii\db\Exception as DbException;
 use yii\filters\VerbFilter;
+use yii\helpers\ArrayHelper;
+use yii\helpers\Json;
+use yii\web\Controller;
+use yii\web\Response;
+use yii\web\View;
+
 
 /**
  * RouteController implements the CRUD actions for Route model.
@@ -54,21 +68,166 @@ class RouteController extends Controller
         ]);
     }
     
-    public function refreshRoutes()
+    public function actionRefresh()
     {
         
         
         $routes = $this->module->getAppRoutes();
+        var_dump($routes);
+        $this->render("_growl");
         
-        foreach ($routes as $name) {
-            $route = new \derekisbusy\routes\models\Route();
-            $route->name = $name;
-            $route->save();
+    }
+    
+    /**
+     * Processes a code block and catches exceptions
+     *
+     * @param Closure $callback the function to execute (this returns a valid `$success`)
+     * @param string $msgError the default error message to return
+     * @param string $msgSuccess the default success error message to return
+     *
+     * @return array outcome of the code consisting of following keys:
+     * - `out`: _string_, the output content
+     * - `status`: _string_, success or error
+     */
+    public static function process($callback, $msgError, $msgSuccess)
+    {
+        $error = $msgError;
+        try {
+            $success = call_user_func($callback);
+        } catch (DbException $e) {
+            $success = false;
+            $error = $e->getMessage();
+        } catch (NotSupportedException $e) {
+            $success = false;
+            $error = $e->getMessage();
+        } catch (InvalidParamException $e) {
+            $success = false;
+            $error = $e->getMessage();
+        } catch (InvalidConfigException $e) {
+            $success = false;
+            $error = $e->getMessage();
+        } catch (InvalidCallException $e) {
+            $success = false;
+            $error = $e->getMessage();
+        } catch (Exception $e) {
+            $success = false;
+            $error = $e->getMessage();
+        }
+        if ($success !== false) {
+            $out = $msgSuccess === null ? $success : $msgSuccess;
+            return ['out' => $out, 'status' => 'success'];
+        } else {
+            return ['out' => $error, 'status' => 'error'];
+        }
+    }
+    
+    /**
+     * Gets the data from $_POST after parsing boolean values
+     *
+     * @return array
+     */
+    protected static function getPostData()
+    {
+        if (empty($_POST)) {
+            return [];
+        }
+        $out = [];
+        foreach ($_POST as $key => $value) {
+            $out[$key] = in_array($key, static::$boolKeys) ? filter_var($value, FILTER_VALIDATE_BOOLEAN) : $value;
+        }
+        return $out;
+    }
+    
+    /**
+     * Checks if request is valid and throws exception if invalid condition is true
+     *
+     * @param boolean $isJsonResponse whether the action response is of JSON format
+     * @param boolean $isInvalid whether the request is invalid
+     *
+     * @throws InvalidCallException
+     */
+    protected static function checkValidRequest($isJsonResponse = true, $isInvalid = null)
+    {
+        $app = Yii::$app;
+        if ($isJsonResponse) {
+            $app->response->format = Response::FORMAT_JSON;
+        }
+        if ($isInvalid === null) {
+            $isInvalid = !$app->request->isAjax || !$app->request->isPost;
+        }
+        if ($isInvalid) {
+            throw new InvalidCallException(Yii::t('kvtree', 'This operation is not allowed.'));
         }
     }
     
     
-    
+    /**
+     * Checks signature of posted data for ensuring security against data tampering.
+     *
+     * @param string $action the controller action for which post data signature will be verified
+     * @param array $data the posted data
+     *
+     * @throws InvalidCallException
+     */
+    protected static function checkSignature($action, $data = [])
+    {
+        if (Yii::$app instanceof Application) {
+            return; // skip hash signature validation for console apps
+        }
+        $module = TreeView::module();
+        $security = Yii::$app->security;
+        $modelClass = '\derekisbusy\routes\models\Route';
+        $validate = function ($act, $oldHash, $newHashData) use ($module, $security) {
+            $salt = $module->treeEncryptSalt;
+            $newHash = $security->hashData($newHashData, $salt);
+            if ($security->validateData($oldHash, $salt) && $oldHash === $newHash) {
+                return;
+            }
+            $params = YII_DEBUG ? '<pre>OLD HASH:<br>' . $oldHash . '<br>NEW HASH:<br>' . $newHash . '</pre>' : '';
+            $message = Yii::t(
+                'kvtree',
+                '<h4>Operation Disallowed</h4><hr>Invalid request signature detected during tree data <b>{action}</b> action! Please refresh the page and retry.{params}',
+                ['action' => $act, 'params' => $params]
+            );
+            throw new InvalidCallException($message);
+        };
+        switch ($action) {
+            case 'save':
+                $treeNodeModify = $currUrl = $treeSaveHash = null;
+                extract($data);
+                $dataToHash = !!$treeNodeModify . $currUrl . $modelClass;
+                $validate($action, $treeSaveHash, $dataToHash);
+                break;
+            case 'manage':
+                $treeManageHash = null;
+                $isAdmin = $softDelete = $showFormButtons = $showIDAttribute = false;
+                $currUrl = $nodeView = $formAction = $nodeSelected = '';
+                $formOptions = $iconsList = $nodeAddlViews = $breadcrumbs = [];
+                extract($data);
+                $icons = is_array($iconsList) ? array_values($iconsList) : $iconsList;
+                $dataToHash = $modelClass . !!$isAdmin . !!$softDelete . !!$showFormButtons .
+                    !!$showIDAttribute . $currUrl . $nodeView . $nodeSelected . Json::encode($formOptions) .
+                    Json::encode($nodeAddlViews) . Json::encode($icons) . Json::encode($breadcrumbs);
+                $validate($action, $treeManageHash, $dataToHash);
+                break;
+            case 'remove':
+                $treeRemoveHash = null;
+                $softDelete = false;
+                extract($data);
+                $dataToHash = $modelClass . $softDelete;
+                $validate($action, $treeRemoveHash, $dataToHash);
+                break;
+            case 'move':
+                $treeMoveHash = $allowNewRoots = null;
+                extract($data);
+                $dataToHash = $modelClass . $allowNewRoots;
+                $validate($action, $treeMoveHash, $dataToHash);
+                break;
+            default:
+                break;
+        }
+    }
+
 
     /**
      * Saves a node once form is submitted
@@ -157,10 +316,10 @@ class RouteController extends Controller
      */
     public function actionManage()
     {
-        static::checkValidRequest();
+//        static::checkValidRequest();
         $callback = function () {
             $parentKey = null;
-            $modelClass = '\kartik\tree\models\Tree';
+            $modelClass = '\derekisbusy\routes\models\Route';
             $isAdmin = $softDelete = $showFormButtons = $showIDAttribute = $allowNewRoots = false;
             $currUrl = $nodeView = $formAction = $nodeSelected = '';
             $formOptions = $iconsList = $nodeAddlViews = $breadcrumbs = [];
@@ -205,7 +364,7 @@ class RouteController extends Controller
                 }
                 );
             }
-            static::checkSignature('manage', $data);
+//            static::checkSignature('manage', $data);
             return $this->renderAjax($nodeView, ['params' => $params]);
         };
         return self::process(
