@@ -31,7 +31,7 @@ use Yii;
  */
 class Route extends \kartik\tree\models\Tree
 {
-
+    
     /**
      * @inheritdoc
      */
