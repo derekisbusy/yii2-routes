@@ -86,7 +86,7 @@ class RouteController extends Controller
     {
         
         
-        $routes = $this->module->getAppRoutes();
+        $routes = $this->module->getRoutes();
 //        var_dump($routes);
         
         $this->render("_growl");
