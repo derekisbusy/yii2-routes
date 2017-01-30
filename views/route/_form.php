@@ -305,7 +305,8 @@ echo Html::hiddenInput('treeMoveHash', $security->hashData($dataToHash, $module-
      * SECTION 9: Administrator attributes zone.
      */
     ?>
-    <?php if ($isAdmin): ?>
+    <?php
+    if ($isAdmin && false): ?>
         <h4><?= Yii::t('kvtree', 'Admin Settings') ?></h4>
 
         <?php
@@ -346,8 +347,9 @@ echo Html::hiddenInput('treeMoveHash', $security->hashData($dataToHash, $module-
          * SECTION 12: Additional views part 4 - within admin zone AFTER mandatory attributes.
          */
         ?>
-        <?= $renderContent(Module::VIEW_PART_4) ?>
-    <?php endif; ?>
+        <?php echo $renderContent(Module::VIEW_PART_4) ?>
+    <?php 
+    endif; ?>
 
 <?php endif; ?>
 <?php
