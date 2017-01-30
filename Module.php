@@ -2,8 +2,8 @@
 
 namespace derekisbusy\routes;
 
+use derekisbusy\routes\models\base\Route as Route2;
 use derekisbusy\routes\models\Route;
-use Exception;
 use ReflectionClass;
 use Yii;
 use yii\helpers\VarDumper;
@@ -52,20 +52,12 @@ class Module extends \yii\base\Module
      */
     public function getRoutes()
     {
-//        $manager = Configs::authManager();
-//        $routes = $this->getAppRoutes();
-//        $exists = [];
-//        foreach (array_keys($manager->getPermissions()) as $name) {
-//            if ($name[0] !== '/') {
-//                continue;
-//            }
-//            $exists[] = $name;
-//            unset($routes[$name]);
-//        }
-//        return [
-//            'available' => array_keys($routes),
-//            'assigned' => $exists,
-//        ];
+        \Yii::$app
+            ->db
+            ->createCommand()
+            ->delete(Route2::tableName(), ['readonly' => 1])
+            ->execute();
+        return $this->getAppRoutes();
     }
 
     /**
@@ -84,6 +76,8 @@ class Module extends \yii\base\Module
                         $root = new Route;
                         $root->name = $alias;
                         $root->route = $alias;
+                        $root->status = Route::STATUS_PROTECTED;
+                        $root->readonly = 1;
                         $root->makeRoot();
                         $result += $this->getAppRoutes(Yii::$app, $alias, $root);
                     } else {
@@ -141,9 +135,13 @@ class Module extends \yii\base\Module
             $result[$all] = $all;
             
             if ($module->uniqueId) {
+                $name = explode("/", $module->uniqueId);
+                $name = array_pop($name);
                 $route = new Route;
-                $route->name = $module->uniqueId;
+                $route->name = $name;
                 $route->route = $all;
+                $route->status = Route::STATUS_PROTECTED;
+                $route->readonly = 1;
                 if ($parent) {
 //                    var_dump($parent);
                     $route->appendTo($parent);
@@ -158,7 +156,7 @@ class Module extends \yii\base\Module
             
             foreach ($module->getModules() as $id => $child) {
                 if (($child = $module->getModule($id)) !== null) {
-                    var_dump($id);
+//                    var_dump($id);
                     $this->getRouteRecursive($child, $result, $app, $route);
                 }
             }
@@ -240,6 +238,8 @@ class Module extends \yii\base\Module
             $route = new Route;
             $route->name = $name;
             $route->route = $all;
+            $route->status = Route::STATUS_PROTECTED;
+            $route->readonly = 1;
             $route->appendTo($parent);
             
             $this->getActionRoutes($controller, $result, $app, $route);
@@ -269,9 +269,13 @@ class Module extends \yii\base\Module
             }
             foreach ($controller->actions() as $id => $value) {
                 $result[$prefix . $id] = $prefix . $id;
+                $name = explode("/", $id);
+                $name = array_pop($name);
                 $route = new Route;
-                $route->name = $id;
+                $route->name = $name;
                 $route->route = $prefix . $id;
+                $route->status = Route::STATUS_PROTECTED;
+                $route->readonly = 1;
                 $route->appendTo($parent);
             }
             $class = new ReflectionClass($controller);
@@ -282,9 +286,13 @@ class Module extends \yii\base\Module
                     $name = ltrim(str_replace(' ', '-', $name), '-');
                     $all = $prefix . $name;
                     $result[$all] = $all;
+                    $name = explode("/", $name);
+                    $name = array_pop($name);
                     $route = new Route;
                     $route->name = $name;
                     $route->route = $all;
+                    $route->status = Route::STATUS_PROTECTED;
+                    $route->readonly = 1;
                     $route->appendTo($parent);
                 }
             }
