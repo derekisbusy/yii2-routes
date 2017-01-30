@@ -28,6 +28,20 @@ use yii\web\View;
  */
 class RouteController extends Controller
 {
+    
+    /**
+     * @var array the list of keys in $_POST which must be cast as boolean
+     */
+    public static $boolKeys = [
+        'isAdmin',
+        'softDelete',
+        'showFormButtons',
+        'showIDAttribute',
+        'multiple',
+        'treeNodeModify',
+        'allowNewRoots',
+    ];
+    
     public function behaviors()
     {
         return [
@@ -73,7 +87,8 @@ class RouteController extends Controller
         
         
         $routes = $this->module->getAppRoutes();
-        var_dump($routes);
+//        var_dump($routes);
+        
         $this->render("_growl");
         
     }
@@ -316,7 +331,7 @@ class RouteController extends Controller
      */
     public function actionManage()
     {
-//        static::checkValidRequest();
+        static::checkValidRequest();
         $callback = function () {
             $parentKey = null;
             $modelClass = '\derekisbusy\routes\models\Route';
@@ -355,6 +370,7 @@ class RouteController extends Controller
                     'breadcrumbs' => empty($breadcrumbs) ? [] : $breadcrumbs,
                     'noNodesMessage' => ''
                 ];
+            
             if (!empty($module->unsetAjaxBundles)) {
                 Event::on(
                     View::className(), View::EVENT_AFTER_RENDER, function ($e) use ($module) {
@@ -364,7 +380,10 @@ class RouteController extends Controller
                 }
                 );
             }
+            
 //            static::checkSignature('manage', $data);
+//            var_dump($this->renderAjax($nodeView, ['params' => $params]));
+//            exit;
             return $this->renderAjax($nodeView, ['params' => $params]);
         };
         return self::process(
