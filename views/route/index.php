@@ -1,6 +1,7 @@
 <?php
 /* @var $this yii\web\View */
 
+use kartik\widgets\SwitchInput;
 use derekisbusy\routes\models\Route;
 use kartik\tree\Module;
 use kartik\tree\TreeView;
@@ -34,4 +35,9 @@ $this->params['breadcrumbs'][] = $this->title;
     ]);
     ?>
 
+</div>
+<div style="display: none"><?= SwitchInput::widget([
+    'name' => 'hidden',
+    'tristate' => true
+]); ?>
 </div>
