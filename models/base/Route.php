@@ -2,6 +2,7 @@
 
 namespace derekisbusy\routes\models\base;
 
+use kartik\tree\TreeView;
 use Yii;
 
 /**
@@ -17,6 +18,7 @@ use Yii;
  * @property string $icon
  * @property integer $icon_type
  * @property integer $active
+ * @property integer $status
  * @property integer $selected
  * @property integer $disabled
  * @property integer $readonly
@@ -31,6 +33,8 @@ use Yii;
  */
 class Route extends \kartik\tree\models\Tree
 {
+    const STATUS_PUBLIC = 0;
+    const STATUS_PROTECTED = 1;
     
     /**
      * @inheritdoc
@@ -38,7 +42,7 @@ class Route extends \kartik\tree\models\Tree
     public function rules()
     {
         return [
-            [['root', 'lft', 'rgt', 'lvl', 'icon_type', 'active', 'selected', 'disabled', 'readonly', 'visible', 'collapsed', 'movable_u', 'movable_d', 'movable_l', 'movable_r', 'removable', 'removable_all'], 'integer'],
+            [['root', 'lft', 'rgt', 'lvl', 'icon_type', 'active', 'status', 'selected', 'disabled', 'readonly', 'visible', 'collapsed', 'movable_u', 'movable_d', 'movable_l', 'movable_r', 'removable', 'removable_all'], 'integer'],
             [['name','route'], 'required'],
             [['name'], 'string', 'max' => 60],
             [['icon','route'], 'string', 'max' => 255]
@@ -68,6 +72,7 @@ class Route extends \kartik\tree\models\Tree
             'route' => Yii::t('rbac', 'Route'),
             'icon' => Yii::t('rbac', 'Icon'),
             'icon_type' => Yii::t('rbac', 'Icon Type'),
+            'status' => Yii::t('rbac', 'Status'),
             'active' => Yii::t('rbac', 'Active'),
             'selected' => Yii::t('rbac', 'Selected'),
             'disabled' => Yii::t('rbac', 'Disabled'),
@@ -90,5 +95,43 @@ class Route extends \kartik\tree\models\Tree
     public static function find()
     {
         return new \derekisbusy\routes\models\RouteQuery(get_called_class());
+    }
+    
+    public function beforeSave($insert)
+    {
+        if (parent::beforeSave($insert)) {
+            
+            switch ($this->status)
+            {
+                case self::STATUS_PUBLIC:
+                    $this->icon_type = TreeView::ICON_CSS;
+                    $this->icon = 'eye-open';
+                    break;
+                case self::STATUS_PROTECTED:
+                    $this->icon_type = TreeView::ICON_CSS;
+                    $this->icon = 'lock';
+                    break;
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public function afterSave($insert, $changedAttributes)
+    {
+        $this->saveStatus();
+        
+        return parent::afterSave($insert, $changedAttributes);
+        
+    }
+    
+    public function saveStatus()
+    {
+        $nodes = $this->children()->all();
+        foreach($nodes as $node) {
+            $node->status = $this->status;
+            $node->save();
+        }
     }
 }
