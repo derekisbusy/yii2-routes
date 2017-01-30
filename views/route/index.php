@@ -8,6 +8,7 @@ use kartik\tree\TreeView;
 use yii\helpers\Url;
 
 
+
 $this->title = Yii::t('rbac', 'Routes');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
@@ -17,9 +18,9 @@ $this->params['breadcrumbs'][] = $this->title;
     echo TreeView::widget([
         'query' => Route::find()->addOrderBy('root, lft'),
         'headingOptions' => ['label' => 'Route'],
-        'rootOptions' => ['label' => '<span class="text-primary">Root</span>'],
+        'rootOptions' => ['label' => '<span class="text-primary">Apps</span>'],
         'fontAwesome' => false,
-        'isAdmin' => true, // @TODO : put your isAdmin getter here
+        'isAdmin' => false, // @TODO : put your isAdmin getter here
         'displayValue' => 0,
         'cacheSettings' => ['enableCache' => true],
         'nodeActions' => [
