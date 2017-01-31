@@ -54,7 +54,7 @@ class Permission extends BasePermission
     
     public function getRouteIds()
     {
-        $ids = base\RouteItem::find(['item_id' => $this->id])->asArray()->all();
+        $ids = base\RouteItem::find()->where(['item_name' => $this->name])->asArray()->all();
         return ArrayHelper::getColumn($ids ,'route_id');
     }
 }
