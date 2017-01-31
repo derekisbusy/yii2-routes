@@ -1,17 +1,20 @@
 <?php
 /* @var $this yii\web\View */
 
-use kartik\widgets\SwitchInput;
 use derekisbusy\routes\models\Route;
 use kartik\tree\Module;
 use kartik\tree\TreeView;
+use kartik\widgets\SwitchInput;
 use yii\helpers\Url;
-
+use yii\widgets\Pjax;
 
 
 $this->title = Yii::t('rbac', 'Routes');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
+<?php $this->beginContent('@dektrium/rbac/views/layout.php') ?>
+
+<?php Pjax::begin() ?>
 <div class="route-index">
 
     <?php
@@ -32,6 +35,43 @@ $this->params['breadcrumbs'][] = $this->title;
         'nodeView' => '@vendor/derekisbusy/yii2-routes/views/route/_form',
         'nodeAddlViews' => [
             Module::VIEW_PART_2 => '@vendor/derekisbusy/yii2-routes/views/route/_assigned'
+        ],
+        'toolbar' => [
+            TreeView::BTN_CREATE => [
+                'icon' => 'plus',
+                'options' => ['title' => Yii::t('kvtree', 'Add new'), 'disabled' => true]
+            ],
+            TreeView::BTN_CREATE_ROOT => [
+                'icon' => false ? 'tree' : 'tree-conifer',
+                'options' => ['title' => Yii::t('kvtree', 'Add new root')]
+            ],
+            TreeView::BTN_REMOVE => [
+                'icon' => 'trash',
+                'options' => ['title' => Yii::t('kvtree', 'Delete'), 'disabled' => true]
+            ],
+            TreeView::BTN_SEPARATOR,
+            TreeView::BTN_MOVE_UP => [
+                'icon' => 'arrow-up',
+                'options' => ['title' => Yii::t('kvtree', 'Move Up'), 'disabled' => true, 'style' => "display: none"]
+            ],
+            TreeView::BTN_MOVE_DOWN => [
+                'icon' => 'arrow-down',
+                'options' => ['title' => Yii::t('kvtree', 'Move Down'), 'disabled' => true, 'style' => "display: none"]
+            ],
+            TreeView::BTN_MOVE_LEFT => [
+                'icon' => 'arrow-left',
+                'options' => ['title' => Yii::t('kvtree', 'Move Left'), 'disabled' => true, 'style' => "display: none"]
+            ],
+            TreeView::BTN_MOVE_RIGHT => [
+                'icon' => 'arrow-right',
+                'options' => ['title' => Yii::t('kvtree', 'Move Right'), 'disabled' => true, 'style' => "display: none"]
+            ],
+            TreeView::BTN_SEPARATOR,
+            TreeView::BTN_REFRESH => [
+                'icon' => 'refresh',
+                'options' => ['title' => Yii::t('kvtree', 'Refresh')],
+                'url' => Yii::$app->request->url
+            ],
         ]
     ]);
     ?>
@@ -42,3 +82,6 @@ $this->params['breadcrumbs'][] = $this->title;
     'tristate' => true
 ]); ?>
 </div>
+<?php Pjax::end() ?>
+
+<?php $this->endContent() ?>
