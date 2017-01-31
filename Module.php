@@ -2,10 +2,11 @@
 
 namespace derekisbusy\routes;
 
-use derekisbusy\routes\models\base\Route as Route2;
+use dektrium\rbac\RbacWebModule;
 use derekisbusy\routes\models\Route;
 use ReflectionClass;
 use Yii;
+use yii\base\Event;
 use yii\helpers\VarDumper;
 
 /**
@@ -23,17 +24,7 @@ class Module extends \yii\base\Module
      */
     public $defaultRoute = 'route';
 
-    public $apps = [
-        
-            '@backend' => null,
-            '@frontend' => [
-                'modules' =>[
-                    'patient' => [
-                        'class' => 'derekisbusy\medical\frontend\modules\patient\Module',
-                    ],
-                ]
-            ]
-    ];
+    public $apps = [];
     
     /**
      * @inheritdoc
@@ -42,7 +33,10 @@ class Module extends \yii\base\Module
     {
         parent::init();
 
-        // custom initialization code goes here
+        // attach menu event
+        Event::on(self::className(), RbacWebModule::EVENT_MENU, 
+            ['derekisbusy\routes\handlers\MenuHandler', 'handleMenuEvent']);
+        
     }
     
     
@@ -55,7 +49,7 @@ class Module extends \yii\base\Module
         \Yii::$app
             ->db
             ->createCommand()
-            ->delete(Route2::tableName(), ['readonly' => 1])
+            ->delete(Route::tableName(), ['readonly' => 1])
             ->execute();
         return $this->getAppRoutes();
     }
@@ -143,7 +137,6 @@ class Module extends \yii\base\Module
                 $route->status = Route::STATUS_PROTECTED;
                 $route->readonly = 1;
                 if ($parent) {
-//                    var_dump($parent);
                     $route->appendTo($parent);
                 } else {
                     $route->makeRoot();
@@ -156,7 +149,6 @@ class Module extends \yii\base\Module
             
             foreach ($module->getModules() as $id => $child) {
                 if (($child = $module->getModule($id)) !== null) {
-//                    var_dump($id);
                     $this->getRouteRecursive($child, $result, $app, $route);
                 }
             }
