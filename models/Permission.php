@@ -31,7 +31,7 @@ class Permission extends BasePermission
 //            ->viaTable(self::tableName(), ['item_id' => 'id']);
 //    }
     
-    public function afterSave($insert, $changedAttributes)
+    public function afterSave($insert)
     {
 //        parent::afterSave($insert, $changedAttributes);
         if (!$insert) {
