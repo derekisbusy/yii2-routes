@@ -6,9 +6,10 @@
  */
 
 use kartik\form\ActiveForm;
+use kartik\tree\models\Tree;
 use kartik\tree\Module;
 use kartik\tree\TreeView;
-use kartik\tree\models\Tree;
+use kartik\widgets\SwitchInput;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\helpers\Json;
@@ -239,59 +240,34 @@ echo Html::hiddenInput('treeMoveHash', $security->hashData($dataToHash, $module-
      * SECTION 7: Basic node attributes for editing.
      */
     ?>
-    <?php if ($iconsList == 'text' || $iconsList == 'none'): ?>
-        <?php if ($showIDAttribute): ?>
-            <div class="row">
-                <div class="col-sm-4">
-                    <?= $keyField ?>
-                </div>
-                <div class="col-sm-8">
-                    <?= $form->field($node, $nameAttribute)->textInput($inputOpts) ?>
-                </div>
-            </div>
-        <?php else: ?>
-            <?= $keyField ?>
+
+<div class="route-form">
+    <div class="row">
+        <div class="col-md-6 col-sm-12">
             <?= $form->field($node, $nameAttribute)->textInput($inputOpts) ?>
-        <?php endif; ?>
-        <?php if ($iconsList === 'text'): ?>
-            <div class="row">
-                <div class="col-sm-4">
-                    <?= $form->field($node, $iconTypeAttribute)->dropdownList([
-                        TreeView::ICON_CSS => 'CSS Suffix',
-                        TreeView::ICON_RAW => 'Raw Markup',
-                    ], $inputOpts) ?>
-                </div>
-                <div class="col-sm-8">
-                    <?= $form->field($node, $iconAttribute)->textInput($inputOpts) ?>
-                </div>
-            </div>
-        <?php endif; ?>
-    <?php else: ?>
-        <div class="row">
-            <div class="col-sm-6">
-                <?= $keyField ?>
-                <?= Html::activeHiddenInput($node, $iconTypeAttribute) ?>
-                <?= $form->field($node, $nameAttribute)->textArea(['rows' => 3] + $inputOpts) ?>
-            </div>
-            <div class="col-sm-6">
-                <?= /** @noinspection PhpUndefinedMethodInspection */
-                $form->field($node, $iconAttribute)->multiselect($iconsList, [
-                    'item' => function ($index, $label, $name, $checked, $value) use ($inputOpts) {
-                        if ($index == 0 && $value == '') {
-                            $checked = true;
-                            $value = '';
-                        }
-                        return '<div class="radio">' . Html::radio($name, $checked, [
-                            'value' => $value,
-                            'label' => $label,
-                            'disabled' => !empty($inputOpts['readonly']) || !empty($inputOpts['disabled'])
-                        ]) . '</div>';
-                    },
-                    'selector' => 'radio',
-                ]) ?>
-            </div>
         </div>
-    <?php endif; ?>
+        <div class="col-md-6 col-sm-12">
+<?= $form->field($node, 'status')->widget(SwitchInput::classname(), [
+    'type' => SwitchInput::CHECKBOX,
+//    'type' => SwitchInput::RADIO,
+    'items' => [
+        ['label' => 'Public', 'value' => 0],
+        ['label' => 'Protectedw', 'value' => 1],
+    ],
+    'pluginOptions' => [
+        'handleWidth'=>110,
+        'size' => 'large',
+        'onColor' => 'success',
+        'offColor' => 'danger',
+        'offText' => 'Public',
+        'onText' => 'Protected'
+    ]
+
+]);?>
+        </div>
+    </div>
+</div>
+
 
     <?php
     /**
