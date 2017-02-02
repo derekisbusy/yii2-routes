@@ -241,6 +241,9 @@ echo Html::hiddenInput('treeMoveHash', $security->hashData($dataToHash, $module-
      */
     ?>
 
+                <div class="hidden">
+                    <?= $keyField ?>
+                </div>
 <div class="route-form">
     <div class="row">
         <div class="col-md-6 col-sm-12">
