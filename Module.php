@@ -46,11 +46,6 @@ class Module extends \yii\base\Module
      */
     public function getRoutes()
     {
-        \Yii::$app
-            ->db
-            ->createCommand()
-            ->delete(Route::tableName(), ['readonly' => 1])
-            ->execute();
         return $this->getAppRoutes();
     }
 
@@ -67,12 +62,15 @@ class Module extends \yii\base\Module
                 foreach ($apps as $alias => $config) {
 //                    var_dump($root->getIsNewRecord()); return;
                     if ($config === null) {
-                        $root = new Route;
-                        $root->name = $alias;
-                        $root->route = $alias;
-                        $root->status = Route::STATUS_PROTECTED;
-                        $root->readonly = 1;
-                        $root->makeRoot();
+                        $root = Route::findOne(['name' => $alias, 'root' => 1]);
+                        if (!$root) {
+                            $root = new Route;
+                            $root->name = $alias;
+                            $root->route = $alias;
+                            $root->status = Route::STATUS_PROTECTED;
+                            $root->readonly = 1;
+                            $root->makeRoot();
+                        }
                         $result += $this->getAppRoutes(Yii::$app, $alias, $root);
                     } else {
                         $m = new yii\base\Module($alias, null, $config);
@@ -131,15 +129,18 @@ class Module extends \yii\base\Module
             if ($module->uniqueId) {
                 $name = explode("/", $module->uniqueId);
                 $name = array_pop($name);
+                $route = Route::findOne(['route' => $all]);
+                if (!$route) {
                 $route = new Route;
                 $route->name = $name;
                 $route->route = $all;
                 $route->status = Route::STATUS_PROTECTED;
                 $route->readonly = 1;
-                if ($parent) {
-                    $route->appendTo($parent);
-                } else {
-                    $route->makeRoot();
+                    if ($parent) {
+                        $route->appendTo($parent);
+                    } else {
+                        $route->makeRoot();
+                    }
                 }
             }
             else {
@@ -227,12 +228,16 @@ class Module extends \yii\base\Module
             }
             $name = explode("/", $controller->uniqueId);
             $name = array_pop($name);
-            $route = new Route;
-            $route->name = $name;
-            $route->route = $all;
-            $route->status = Route::STATUS_PROTECTED;
-            $route->readonly = 1;
-            $route->appendTo($parent);
+            
+            $route = Route::findOne(['route' => $all]);
+            if (!$route) {
+                $route = new Route;
+                $route->name = $name;
+                $route->route = $all;
+                $route->status = Route::STATUS_PROTECTED;
+                $route->readonly = 1;
+                $route->appendTo($parent);
+            }
             
             $this->getActionRoutes($controller, $result, $app, $route);
             $result[$all] = $all;
@@ -263,12 +268,16 @@ class Module extends \yii\base\Module
                 $result[$prefix . $id] = $prefix . $id;
                 $name = explode("/", $id);
                 $name = array_pop($name);
-                $route = new Route;
-                $route->name = $name;
-                $route->route = $prefix . $id;
-                $route->status = Route::STATUS_PROTECTED;
-                $route->readonly = 1;
-                $route->appendTo($parent);
+                
+                $route = Route::findOne(['route' => $prefix . $id]);
+                if (!$route) {
+                    $route = new Route;
+                    $route->name = $name;
+                    $route->route = $prefix . $id;
+                    $route->status = Route::STATUS_PROTECTED;
+                    $route->readonly = 1;
+                    $route->appendTo($parent);
+                }
             }
             $class = new ReflectionClass($controller);
             foreach ($class->getMethods() as $method) {
@@ -280,12 +289,16 @@ class Module extends \yii\base\Module
                     $result[$all] = $all;
                     $name = explode("/", $name);
                     $name = array_pop($name);
-                    $route = new Route;
-                    $route->name = $name;
-                    $route->route = $all;
-                    $route->status = Route::STATUS_PROTECTED;
-                    $route->readonly = 1;
-                    $route->appendTo($parent);
+                    
+                    $route = Route::findOne(['route' => $all]);
+                    if (!$route) {
+                        $route = new Route;
+                        $route->name = $name;
+                        $route->route = $all;
+                        $route->status = Route::STATUS_PROTECTED;
+                        $route->readonly = 1;
+                        $route->appendTo($parent);
+                    }
                 }
             }
 //        } catch (Exception $exc) {
