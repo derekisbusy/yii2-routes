@@ -60,7 +60,6 @@ class Module extends \yii\base\Module
             if (!empty($apps)) {
                 $result = [];
                 foreach ($apps as $alias => $config) {
-//                    var_dump($root->getIsNewRecord()); return;
                     if ($config === null) {
                         $root = Route::findOne(['name' => $alias, 'root' => 1]);
                         if (!$root) {
@@ -76,34 +75,15 @@ class Module extends \yii\base\Module
                         $m = new yii\base\Module($alias, null, $config);
                         $result += $this->getAppRoutes($m, true, null);
                     }
-                    
                 }
-//                        var_dump($result); exit;
                 return $result;
             }
             $module = Yii::$app;
         } elseif (is_string($module)) {
             $module = Yii::$app->getModule($module);
         }
-//        $key = [__METHOD__, $module->getUniqueId()];
-//        $cache = $this->cache;
-//        if ($cache === null || ($result = $cache->get($key)) === false) {
             $result = [];
-//            if (!$root) {
-//                $root = new Route;
-//                $app = "@app";
-//                $root->name = $app;
-//                $root->route = $app;
-//                $root->makeRoot();
-//                return;
-//            }
             $this->getRouteRecursive($module, $result, $app, $root);
-//            if ($cache !== null) {
-//                $cache->set($key, $result, Configs::instance()->cacheDuration, new TagDependency([
-//                    'tags' => self::CACHE_TAG,
-//                ]));
-//            }
-//        }
 
         return $result;
     }
@@ -116,8 +96,8 @@ class Module extends \yii\base\Module
     protected function getRouteRecursive($module, &$result, &$app= null, $parent = null)
     {
         $token = "Get Route of '" . get_class($module) . "' with id '" . $module->uniqueId . "'";
-//        Yii::beginProfile($token, __METHOD__);
-//        try {
+        Yii::beginProfile($token, __METHOD__);
+        try {
             
             if ($app===true) {
                 $all = ltrim($module->uniqueId . '/*', '/');
@@ -162,10 +142,10 @@ class Module extends \yii\base\Module
             $this->getControllerFiles($module, $namespace, '', $result, $app, $route);
             
             
-//        } catch (Exception $exc) {
-//            Yii::error($exc->getMessage(), __METHOD__);
-//        }
-//        Yii::endProfile($token, __METHOD__);
+        } catch (Exception $exc) {
+            Yii::error($exc->getMessage(), __METHOD__);
+        }
+        Yii::endProfile($token, __METHOD__);
     }
 
     /**
@@ -180,8 +160,8 @@ class Module extends \yii\base\Module
     {
         $path = Yii::getAlias('@' . str_replace('\\', '/', $namespace), false);
         $token = "Get controllers from '$path'";
-//        Yii::beginProfile($token, __METHOD__);
-//        try {
+        Yii::beginProfile($token, __METHOD__);
+        try {
             if (!is_dir($path)) {
                 return;
             }
@@ -201,10 +181,10 @@ class Module extends \yii\base\Module
                     }
                 }
             }
-//        } catch (Exception $exc) {
-//            Yii::error($exc->getMessage(), __METHOD__);
-//        }
-//        Yii::endProfile($token, __METHOD__);
+        } catch (Exception $exc) {
+            Yii::error($exc->getMessage(), __METHOD__);
+        }
+        Yii::endProfile($token, __METHOD__);
     }
 
     /**
@@ -217,8 +197,8 @@ class Module extends \yii\base\Module
     protected function getControllerActions($type, $id, $module, &$result, $app = null, $parent = null)
     {
         $token = "Create controller with cofig=" . VarDumper::dumpAsString($type) . " and id='$id'";
-//        Yii::beginProfile($token, __METHOD__);
-//        try {
+        Yii::beginProfile($token, __METHOD__);
+        try {
             /* @var $controller \yii\base\Controller */
             $controller = Yii::createObject($type, [$id, $module]);
             if ($app===true) {
@@ -242,11 +222,10 @@ class Module extends \yii\base\Module
             $this->getActionRoutes($controller, $result, $app, $route);
             $result[$all] = $all;
             
-            
-//        } catch (Exception $exc) {
-//            Yii::error($exc->getMessage(), __METHOD__);
-//        }
-//        Yii::endProfile($token, __METHOD__);
+        } catch (Exception $exc) {
+            Yii::error($exc->getMessage(), __METHOD__);
+        }
+        Yii::endProfile($token, __METHOD__);
     }
 
     /**
@@ -257,8 +236,8 @@ class Module extends \yii\base\Module
     protected function getActionRoutes($controller, &$result, &$app = null, $parent = null)
     {
         $token = "Get actions of controller '" . $controller->uniqueId . "'";
-//        Yii::beginProfile($token, __METHOD__);
-//        try {
+        Yii::beginProfile($token, __METHOD__);
+        try {
             if ($app===true) {
                 $prefix = $controller->uniqueId . '/';
             } else {
@@ -301,9 +280,9 @@ class Module extends \yii\base\Module
                     }
                 }
             }
-//        } catch (Exception $exc) {
-//            Yii::error($exc->getMessage(), __METHOD__);
-//        }
-//        Yii::endProfile($token, __METHOD__);
+        } catch (Exception $exc) {
+            Yii::error($exc->getMessage(), __METHOD__);
+        }
+        Yii::endProfile($token, __METHOD__);
     }
 }
