@@ -42,10 +42,11 @@ class Route extends \kartik\tree\models\Tree
     public function rules()
     {
         return [
-            [['root', 'lft', 'rgt', 'lvl', 'icon_type', 'active', 'status', 'selected', 'disabled', 'readonly', 'visible', 'collapsed', 'movable_u', 'movable_d', 'movable_l', 'movable_r', 'removable', 'removable_all'], 'integer'],
-            [['name','route'], 'required'],
+            [['root', 'lft', 'rgt', 'lvl', 'icon_type', 'status', 'selected', 'disabled', 'readonly', 'visible', 'collapsed', 'movable_u', 'movable_d', 'movable_l', 'movable_r', 'removable', 'removable_all'], 'integer'],
+            [['name'], 'required'],
             [['name'], 'string', 'max' => 60],
-            [['icon','route'], 'string', 'max' => 255]
+            [['icon','route'], 'string', 'max' => 255],
+            ['active', 'boolean']
         ];
     }
     
@@ -97,6 +98,14 @@ class Route extends \kartik\tree\models\Tree
         return new \derekisbusy\routes\models\RouteQuery(get_called_class());
     }
     
+//    public function beforeValidate()
+//    {
+//        if (empty($this->route)) {
+//            $this->route = $this->generateRoute();
+//        }
+//        return parent::beforeValidate();
+//    }
+    
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {
@@ -133,5 +142,14 @@ class Route extends \kartik\tree\models\Tree
             $node->status = $this->status;
             $node->save();
         }
+    }
+    
+    public function generateRoute()
+    {
+        $route = "";
+        foreach ($this->parents()->all() as $parent) {
+            $route .= $parent->name .'/';
+        }
+        return $route.$this->name;
     }
 }
