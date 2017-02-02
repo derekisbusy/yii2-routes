@@ -2,6 +2,7 @@
 
 namespace derekisbusy\routes\models\base;
 
+use derekisbusy\routes\models\Permission;
 use kartik\tree\TreeView;
 use Yii;
 
@@ -151,5 +152,18 @@ class Route extends \kartik\tree\models\Tree
             $route .= $parent->name .'/';
         }
         return $route.$this->name;
+    }
+    
+    public function getItems()
+    {
+        return $this->hasMany(AuthItem::className(), ['name' => 'item_name'])
+            ->viaTable('route_item', ['route_id' => 'id']);
+    }
+    
+    public function getPermissions()
+    {
+        return $this->hasMany(AuthItem::className(), ['name' => 'item_name'])
+            ->where(['type' => \yii\rbac\Item::TYPE_PERMISSION])
+            ->viaTable('route_item', ['route_id' => 'id']);
     }
 }
