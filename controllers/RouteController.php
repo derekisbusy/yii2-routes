@@ -51,19 +51,6 @@ class RouteController extends Controller
                     'delete' => ['post'],
                 ],
             ],
-//            'access' => [
-//                'class' => \yii\filters\AccessControl::className(),
-//                'rules' => [
-//                    [
-//                        'allow' => true,
-//                        'actions' => ['index', 'view', 'create', 'update', 'delete', 'save-as-new'],
-//                        'roles' => ['@']
-//                    ],
-//                    [
-//                        'allow' => false
-//                    ]
-//                ]
-//            ]
         ];
     }
 
@@ -84,12 +71,8 @@ class RouteController extends Controller
     
     public function actionRefresh()
     {
-        
-        
         $routes = $this->module->getRoutes();
-//        var_dump($routes);
-        
-        $this->render("_growl");
+        return $this->redirect(['/routes']);
         
     }
     
@@ -252,7 +235,7 @@ class RouteController extends Controller
         $post = Yii::$app->request->post();
         static::checkValidRequest(false, !isset($post['treeNodeModify']));
         $treeNodeModify = $parentKey = $currUrl = $treeSaveHash = null;
-        $modelClass = '\kartik\tree\models\Tree';
+        $modelClass = '\derekisbusy\routes\models\Route';
         $data = static::getPostData();
         extract($data);
         $module = TreeView::module();
@@ -287,6 +270,11 @@ class RouteController extends Controller
         }
         $errors = $success = false;
         if ($node->save()) {
+            // generate route
+            if (empty($node->route)) {
+                $node->route = $node->generateRoute();
+                $node->save();
+            }
             // check if active status was changed
             if (!$isNewRecord && $node->activeOrig != $node->active) {
                 if ($node->active) {
@@ -405,13 +393,15 @@ class RouteController extends Controller
              * @var Tree $node
              */
             $id = null;
-            $modelClass = '\kartik\tree\models\Tree';
+            $modelClass = '\derekisbusy\routes\models\Route';
             $softDelete = false;
             $data = static::getPostData();
             static::checkSignature('remove', $data);
             extract($data);
             $node = $modelClass::findOne($id);
-            return $node->removeNode($softDelete);
+            
+            $r = $node->removeNode($softDelete);
+            
         };
         return self::process(
             $callback,
@@ -425,6 +415,7 @@ class RouteController extends Controller
      */
     public function actionMove()
     {
+        return;
         /**
          * @var Tree $modelClass
          * @var Tree $nodeFrom
