@@ -71,9 +71,9 @@ class RouteController extends Controller
     
     public function actionRefresh()
     {
-        $routes = $this->module->getRoutes();
+        $mapper = new \derekisbusy\routes\helpers\RouteMapper;
+        $mapper->getRoutes();
         return $this->redirect(['/routes']);
-        
     }
     
     /**
