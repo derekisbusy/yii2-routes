@@ -178,6 +178,12 @@ class AccessControl extends \yii\base\ActionFilter
         
         $route = \derekisbusy\routes\models\Route::find()->where(['route' => Yii::$app->id.'/'. $uniqueId])->one();
         
+        // route not found in database
+        if (is_null($route)) {
+            return true;
+        }
+        
+        // route is public
         if (!is_null($route) && $route->status == \derekisbusy\routes\models\Route::STATUS_PUBLIC) {
             return false;
         }
