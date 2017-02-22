@@ -18,14 +18,13 @@ use yii\di\Instance;
  *
  * ```
  * 'as access' => [
- *     'class' => 'mdm\admin\components\AccessControl',
+ *     'class' => 'derekisbusy\routes\components\AccessControl',
  *     'allowActions' => ['site/login', 'site/error']
  * ]
  * ```
  *
  * @property User $user
  * 
- * @author Misbahul D Munir <misbahuldmunir@gmail.com>
  * @author Derek Gifford <derekisbusy@gmail.com>
  * @since 1.0
  */
