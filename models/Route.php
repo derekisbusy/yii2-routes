@@ -3,7 +3,7 @@
 namespace derekisbusy\routes\models;
 
 use Exception;
-use derekisbusy\rbacroutes\Configs;
+use derekisbusy\routes\Configs;
 use mdm\admin\components\Helper;
 use mdm\admin\components\RouteRule;
 use Yii;

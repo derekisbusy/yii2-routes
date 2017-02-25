@@ -70,6 +70,6 @@ class RouteItem extends \yii\db\ActiveRecord
      */
     public static function find()
     {
-        return new \derekisbusy\rbacroutes\models\RouteItemQuery(get_called_class());
+        return new \derekisbusy\routes\models\RouteItemQuery(get_called_class());
     }
 }
