@@ -13,7 +13,7 @@
     "require": {
         "yiisoft/yii2": "*",
         "kartik-v/yii2-widget-select2": "@dev",
-        "kartik-v/yii2-tree-manager": "@dev"
+        "kartik-v/yii2-tree-manager": "1.0.7-7-g9769a34"
     },
     "autoload": {
         "psr-4": {
