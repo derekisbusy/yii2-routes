@@ -9,7 +9,7 @@ use kartik\form\ActiveForm;
 use kartik\tree\models\Tree;
 use kartik\tree\Module;
 use kartik\tree\TreeView;
-use kartik\widgets\SwitchInput;
+use kartik\switchinput\SwitchInput;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\helpers\Json;
@@ -63,7 +63,7 @@ if ($noNodesMessage) {
 $module = TreeView::module();
 
 // active form instance
-$form = ActiveForm::begin(['action' => $formAction, 'options' => $formOptions]);
+$form = ActiveForm::begin(['action' => $action, 'options' => $formOptions]);
 
 // helper function to show alert
 $showAlert = function ($type, $body = '', $hide = true) {

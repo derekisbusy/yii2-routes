@@ -4,7 +4,7 @@
 use derekisbusy\routes\models\Route;
 use kartik\tree\Module;
 use kartik\tree\TreeView;
-use kartik\widgets\SwitchInput;
+use kartik\switchinput\SwitchInput;
 use yii\bootstrap\Modal;
 use yii\helpers\Url;
 use yii\widgets\ActiveForm;
