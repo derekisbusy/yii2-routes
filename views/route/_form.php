@@ -63,7 +63,7 @@ if ($noNodesMessage) {
 $module = TreeView::module();
 
 // active form instance
-$form = ActiveForm::begin(['action' => $action, 'options' => $formOptions]);
+$form = ActiveForm::begin(['action' => $formAction, 'options' => $formOptions]);
 
 // helper function to show alert
 $showAlert = function ($type, $body = '', $hide = true) {
