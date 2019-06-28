@@ -8,11 +8,11 @@ class m170202_110101_create_route_item_table extends \yii\db\Migration
     {
         $tableOptions = null;
         if ($this->db->driverName === 'mysql') {
-            $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_general_ci ENGINE=InnoDB';
+            $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
         }
         
         $this->createTable('{{%route_item}}', [
-            'item_name' => $this->string(60)->notNull(),
+            'item_name' => $this->string(64)->notNull(),
             'route_id' => $this->integer(11)->notNull(),
             ], $tableOptions);
         

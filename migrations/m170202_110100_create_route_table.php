@@ -2,7 +2,7 @@
 
 use yii\db\Schema;
 
-class m170202_110101_create_route_table extends \yii\db\Migration
+class m170202_110100_create_route_table extends \yii\db\Migration
 {
     public function up()
     {
